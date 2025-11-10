@@ -1,0 +1,63 @@
+default:
+  image: python:3.10
+  tags:
+    - docker
+
+variables:
+  GIT_DEPTH: 0
+
+stages:
+  - build
+  # - test
+
+# 构建并上传包（仅在 git tag 时）
+build_python_package:
+  stage: build
+  tags:
+    - docker
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - echo "安装构建工具"
+    - pip3 install --upgrade pip build setuptools_scm twine
+    - echo "构建Python包"
+    - python3 -m build
+    - ls -la dist/
+    - echo "上传包到私有PyPI（使用挂载的 ~/.pypirc）"
+    - python3 -m twine upload --repository private --disable-progress-bar --verbose dist/*
+
+# 测试刚上传的包安装（允许失败，不影响 pipeline）
+trader_livefut_test:
+  stage: build
+  tags:
+    - docker
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - echo "等待上传生效..."
+    - sleep 10
+    - echo "测试安装刚上传的 trader-livefut 包"
+    - pip3 install cython
+    - pip3 install trader-livefut --force-reinstall
+    - python3 -c "import trader_livefut; print('trader_livefut 导入成功')"
+  allow_failure: true
+  dependencies:
+    - build_python_package
+
+# 单元测试
+# package_test:
+#   stage: test
+#   tags:
+#     - docker
+#   rules:
+#     - if: $CI_COMMIT_TAG
+#   script:
+#     - pip3 install -e .
+#     - pip3 install pytest pytest-timeout
+#     - |
+#       python3 -c "
+#       import trader_livefut
+#       print('trader_livefut 导入成功')
+
+#       "
+#     - pytest tests/ --verbose --tb=line

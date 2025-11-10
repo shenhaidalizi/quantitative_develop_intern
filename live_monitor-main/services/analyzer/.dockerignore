@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# 虚拟环境
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 测试和文档
+.pytest_cache/
+.coverage
+htmlcov/
+*.md
+
+# 数据文件（不打包到镜像）
+data/
+statistic_data/
+*.csv
+*.json
+*.parquet
+
+# 日志
+*.log
+logs/
+
+# Git
+.git/
+.gitignore
+
+# 其他
+.DS_Store
+*.bak
+

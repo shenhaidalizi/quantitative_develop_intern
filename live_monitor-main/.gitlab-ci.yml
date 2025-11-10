@@ -1,0 +1,231 @@
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  DOCKER_REGISTRY: hub.trader.com
+  PROJECT_NAME: live-monitor
+  DOCKER_DRIVER: overlay2
+  # Docker镜像名称
+  ANALYZER_IMAGE: ${DOCKER_REGISTRY}/project/stock-analyzer
+  MONITOR_IMAGE: ${DOCKER_REGISTRY}/project/stock-monitor
+
+# ==================== 测试阶段 ====================
+
+# Analyzer 测试
+test:analyzer:
+  stage: test
+  image: python:3.10-slim
+  tags:
+    - dev
+  only:
+    changes:
+      - services/analyzer/**/*
+      - shared/**/*
+  script:
+    - cd services/analyzer
+    - pip install -r requirements.txt
+    - python -m pytest tests/ -v
+  cache:
+    paths:
+      - services/analyzer/.pytest_cache/
+
+# Monitor 测试
+test:monitor:
+  stage: test
+  image: node:20-alpine
+  tags:
+    - dev
+  only:
+    changes:
+      - services/monitor/**/*
+      - shared/**/*
+  script:
+    - cd services/monitor
+    - npm ci
+    - npm test
+  cache:
+    paths:
+      - services/monitor/node_modules/
+
+# ==================== 构建阶段 ====================
+
+# 构建 Analyzer 镜像
+build:analyzer:
+  stage: build
+  tags:
+    - dev
+  only:
+    - tags
+    - main
+    - develop
+  script:
+    - |
+      # 设置镜像标签
+      if [[ $CI_COMMIT_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        TAG=${CI_COMMIT_TAG}
+      else
+        TAG=${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHORT_SHA}
+      fi
+      
+      echo "构建 Analyzer 镜像: ${ANALYZER_IMAGE}:${TAG}"
+      
+      cd services/analyzer
+      docker build -t ${ANALYZER_IMAGE}:${TAG} .
+      docker push ${ANALYZER_IMAGE}:${TAG}
+      
+      # 如果是生产标签，同时打 latest 标签
+      if [[ $CI_COMMIT_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        docker tag ${ANALYZER_IMAGE}:${TAG} ${ANALYZER_IMAGE}:latest
+        docker push ${ANALYZER_IMAGE}:latest
+      fi
+      
+      # 清理本地镜像
+      docker rmi ${ANALYZER_IMAGE}:${TAG} || true
+  when: manual
+
+# 构建 Monitor 镜像
+build:monitor:
+  stage: build
+  tags:
+    - dev
+  only:
+    - tags
+    - main
+    - develop
+  script:
+    - |
+      # 设置镜像标签
+      if [[ $CI_COMMIT_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        TAG=${CI_COMMIT_TAG}
+      else
+        TAG=${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHORT_SHA}
+      fi
+      
+      echo "构建 Monitor 镜像: ${MONITOR_IMAGE}:${TAG}"
+      
+      cd services/monitor
+      docker build -t ${MONITOR_IMAGE}:${TAG} .
+      docker push ${MONITOR_IMAGE}:${TAG}
+      
+      # 如果是生产标签，同时打 latest 标签
+      if [[ $CI_COMMIT_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        docker tag ${MONITOR_IMAGE}:${TAG} ${MONITOR_IMAGE}:latest
+        docker push ${MONITOR_IMAGE}:latest
+      fi
+      
+      # 清理本地镜像
+      docker rmi ${MONITOR_IMAGE}:${TAG} || true
+  when: manual
+
+# 构建所有服务（用于完整发布）
+build:all:
+  stage: build
+  tags:
+    - dev
+  only:
+    - tags
+  script:
+    - |
+      TAG=${CI_COMMIT_TAG}
+      echo "构建所有服务，版本: ${TAG}"
+      
+      # 构建 Analyzer
+      cd services/analyzer
+      docker build -t ${ANALYZER_IMAGE}:${TAG} .
+      docker push ${ANALYZER_IMAGE}:${TAG}
+      docker tag ${ANALYZER_IMAGE}:${TAG} ${ANALYZER_IMAGE}:latest
+      docker push ${ANALYZER_IMAGE}:latest
+      docker rmi ${ANALYZER_IMAGE}:${TAG}
+      
+      # 构建 Monitor
+      cd ../monitor
+      docker build -t ${MONITOR_IMAGE}:${TAG} .
+      docker push ${MONITOR_IMAGE}:${TAG}
+      docker tag ${MONITOR_IMAGE}:${TAG} ${MONITOR_IMAGE}:latest
+      docker push ${MONITOR_IMAGE}:latest
+      docker rmi ${MONITOR_IMAGE}:${TAG}
+  when: manual
+
+# ==================== 部署阶段 ====================
+
+# 部署到开发环境
+deploy:dev:
+  stage: deploy
+  tags:
+    - dev
+  only:
+    - develop
+  environment:
+    name: development
+    url: http://dev.stock-monitor.trader.com
+  script:
+    - echo "部署到开发环境..."
+    - |
+      TAG=${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHORT_SHA}
+      
+      # 使用 docker-compose 部署
+      export IMAGE_TAG=${TAG}
+      docker-compose -f docker-compose.dev.yml pull
+      docker-compose -f docker-compose.dev.yml up -d
+      
+      # 等待服务启动
+      sleep 10
+      
+      # 健康检查
+      bash scripts/docker/health-check.sh
+  when: manual
+
+# 部署到生产环境
+deploy:prod:
+  stage: deploy
+  tags:
+    - prod
+  only:
+    - tags
+  environment:
+    name: production
+    url: http://stock-monitor.trader.com
+  script:
+    - echo "部署到生产环境..."
+    - |
+      TAG=${CI_COMMIT_TAG}
+      
+      # 使用 Helm 部署到 Kubernetes
+      export KUBECONFIG=~/.kube/config
+      
+      helm upgrade --install stock-analyzer \
+        --set image.repository=${ANALYZER_IMAGE} \
+        --set image.tag=${TAG} \
+        --namespace production \
+        ./charts/analyzer \
+        --wait --debug
+      
+      helm upgrade --install stock-monitor \
+        --set image.repository=${MONITOR_IMAGE} \
+        --set image.tag=${TAG} \
+        --namespace production \
+        ./charts/monitor \
+        --wait --debug
+      
+      # 健康检查
+      kubectl -n production get pods
+      kubectl -n production rollout status deployment/stock-analyzer
+      kubectl -n production rollout status deployment/stock-monitor
+  when: manual
+
+# ==================== 清理任务 ====================
+
+# 清理旧镜像
+cleanup:images:
+  stage: deploy
+  tags:
+    - dev
+  only:
+    - schedules
+  script:
+    - echo "清理旧的Docker镜像..."
+    - docker system prune -af --filter "until=168h"  # 清理7天前的镜像
+  when: manual
+

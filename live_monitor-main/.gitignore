@@ -1,0 +1,81 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+venv/
+env/
+ENV/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+.DS_Store
+
+# 数据文件
+shared/
+services/analyzer/core/data
+services/analyzer/core/statistic_data
+
+# 日志
+shared/logs/**/*.log
+*.log
+
+# 临时文件
+*.tmp
+*.bak
+*.swp
+*~
+
+# 测试覆盖率
+.coverage
+htmlcov/
+.pytest_cache/
+coverage/
+
+# Docker
+*.pid
+*.seed
+*.pid.lock
+
+# 备份
+backups/
+*.tar.gz
+*.zip
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+shared/data/
+
+# 归档（旧数据，不提交）
+archive/
+
+debug/fixed_json/

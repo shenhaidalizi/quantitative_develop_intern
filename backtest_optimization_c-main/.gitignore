@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# C++
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+*.out
+*.app
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 测试数据（可选择性忽略）
+test_cases/sample_data.parquet
+test_cases/sample_signals.npy
+test_cases/sample_weights.npy
+test_cases/expected_output.npz
+test_cases/benchmark_results.csv
+cpp_implementation/cnpy
+cpp_implementation/output
+cpp_implementation/data
+# 日志
+*.log
+
+# 系统文件
+.DS_Store
+Thumbs.db
+

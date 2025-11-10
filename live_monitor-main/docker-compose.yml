@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  # Python数据分析服务
+  analyzer:
+    command: sh -lc "sh /app/scripts/bootstrap.sh && python core/new_timely_data.py"
+    build: 
+      context: ./services/analyzer
+      dockerfile: Dockerfile
+    user: "${UID:-1000}:${GID:-1000}"
+    container_name: stock-analyzer
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - ON_SERVER=true
+      - DATE_INTERVAL=${DATE_INTERVAL:-15}
+      - NUM_PROCESSES=${NUM_PROCESSES:-7}
+      - DATA_ROOT=/app
+      - TZ=Asia/Shanghai
+      - PYTHONPATH=/app/core:/app/minio_api:${PYTHONPATH}
+    volumes:
+      - ./shared/data:/app/data
+      - ./shared/statistic_data:/app/statistic_data
+      - ./shared/logs/analyzer:/app/logs
+      - ${MINIO_API_DIR:-../minio_api/src/minio_api}:/app/minio_api:ro
+    working_dir: /app
+    networks:
+      - stock-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  preprocess:
+    command: sh -lc "sh /app/scripts/bootstrap.sh && cron -f"
+    build:
+      context: ./services/analyzer
+      dockerfile: Dockerfile
+    container_name: stock-preprocess
+    restart: unless-stopped
+    env_file:
+      - .env
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      - ON_SERVER=true
+      - DATA_ROOT=/app
+      - TZ=Asia/Shanghai
+      - PYTHONPATH=/app/core:/app/minio_api:${PYTHONPATH}
+    volumes:
+      - ./shared/statistic_data:/app/statistic_data
+      - ./shared/data:/app/data
+      - ./shared/logs/analyzer:/app/logs
+      - ${MINIO_API_DIR:-../minio_api/src/minio_api}:/app/minio_api:ro
+    networks:
+      - stock-network
+  # Node.js监控服务
+  monitor:
+    build:
+      context: ./services/monitor
+      dockerfile: Dockerfile
+    container_name: stock-monitor
+    restart: unless-stopped
+    env_file:
+      - .env
+    user: "${UID:-1000}:${GID:-1000}"
+    ports:
+      - "${MONITOR_PORT:-8006}:8006"
+    environment:
+      - NODE_ENV=production
+      - PORT=8006
+      - USE_REDIS=false  ##这是为了加速。没必要.
+      # - REDIS_HOST=${REDIS_HOST}
+      # - REDIS_PORT=${REDIS_PORT:-6379}
+      # - REDIS_DB=${REDIS_DB:-0}
+      # - REDIS_PREFIX=teamPublic:
+      # - REDIS_USERNAME=${REDIS_READ_USERNAME:-}
+      # - REDIS_PASSWORD=${REDIS_READ_PASSWORD:-}
+      - STOCK_FOLDER=/app/data/test_result
+      - INDEX_FOLDER=/app/data/index_data
+    volumes:
+      - ./shared/data:/app/data:ro
+      - ./shared/logs/monitor:/app/logs
+    networks:
+      - stock-network
+    depends_on:
+      - analyzer
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8006/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  stock-network:
+    driver: bridge
+

@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools", "wheel", "setuptools_scm[toml]>=6.2", "Cython>=3.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trader-livefut"
+dynamic = ["version"]
+description = "Data processing utilities for trading projects"
+authors = [{name="Your Name", email="you@example.com"}]
+dependencies = [
+    "Cython>=3.0",
+    "ctpwrapper",
+    "pandas",
+    "numpy",
+]
+readme = "README.md"
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools_scm]
+# 自动从git标签获取版本号

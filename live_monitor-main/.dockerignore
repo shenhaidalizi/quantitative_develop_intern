@@ -1,0 +1,54 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# 文档
+*.md
+docs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node
+node_modules/
+npm-debug.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+
+# 数据和日志（不打包到镜像）
+shared/data/
+shared/logs/
+shared/statistic_data/
+archive/
+backups/
+
+# 测试
+tests/
+*.test.js
+test_*.py
+
+# 临时文件
+*.tmp
+*.bak
+*.log
+
+# 环境变量（运行时注入）
+.env
+.env.*
+
+# Docker相关
+docker-compose*.yml
+Dockerfile
+.dockerignore
+

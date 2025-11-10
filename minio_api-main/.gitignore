@@ -1,0 +1,10 @@
+debug
+.pytest_cache
+__pycache__/
+
+*.egg-info/
+
+.env
+.env.test
+
+tests/

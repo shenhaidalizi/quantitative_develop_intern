@@ -1,0 +1,36 @@
+# Git 版本控制文件夹
+.git
+
+# GitLab CI 配置文件，一般不需要放进镜像
+.gitlab-ci.yml
+
+# Node.js 依赖文件夹（如果是 Node 项目，构建时一般用镜像安装依赖）
+node_modules
+
+# Python 虚拟环境文件夹
+venv
+.env
+
+# 临时文件和系统文件
+*.log
+*.tmp
+*.swp
+*.DS_Store
+*.idea/
+*.vscode/
+
+# Dockerfile 相关文件
+Dockerfile
+
+# 编译输出目录（根据项目具体情况调整）
+dist/
+build/
+out/
+
+# 缓存文件夹
+.cache/
+
+# 其他不需要的文件或目录
+tmp/
+logs/
+

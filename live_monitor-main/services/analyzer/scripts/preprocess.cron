@@ -1,0 +1,8 @@
+# 文件: services/analyzer/scripts/preprocess.cron
+# 说明：/etc/cron.d 需要“用户”字段；必须以换行结尾
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+TZ=Asia/Shanghai
+
+# 示例2：每天 08:45 执行一次（如需改为单次）
+# 0 8 * * 1-5 root python /app/core/preprocess_data.py >> /app/logs/preprocess.log 2>&1

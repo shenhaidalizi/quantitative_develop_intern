@@ -1,0 +1,9 @@
+**/brokers.json
+
+*.egg-info
+
+__pycache__/
+*.pyc
+
+src/data/
+logs/

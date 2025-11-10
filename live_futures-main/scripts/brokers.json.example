@@ -1,0 +1,10 @@
+{
+    "simnow":{
+        "trade_front":"tcp://182.254.243.31:40001",
+        "market_front":"tcp://182.254.243.31:40011",
+        "broker":"9999",
+        "user":"",
+        "app":"simnow_client_test",
+        "auth":"0000000000000000"
+    }
+}

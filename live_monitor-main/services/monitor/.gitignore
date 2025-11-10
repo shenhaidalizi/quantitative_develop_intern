@@ -1,0 +1,10 @@
+*.json  
+node_modules/*
+!package.json
+
+.env
+
+#服务器端配置文件
+stock-monitor.service
+
+test_data/
